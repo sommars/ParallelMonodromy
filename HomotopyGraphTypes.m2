@@ -20,7 +20,8 @@ addNode (HomotopyGraph) := (G) -> (
     N := new HomotopyNode from {
         Edges => new MutableList from {},
         Solutions => new MutableList from (for i in 1..G#RootCount list false),
-        SolutionCount => 0
+        SolutionCount => 0,
+        ID => #(G#Nodes)
     };
     G#Nodes = append(G#Nodes, N);
     N
@@ -32,7 +33,8 @@ addEdge (HomotopyGraph, HomotopyNode, HomotopyNode) := (G, N1, N2) -> (
         Node1 => N1,
         Node2 => N2,
         Graph => G,
-        CorrespondenceList => new MutableList from {}
+        CorrespondenceList => new MutableList from {},
+        ID => #(G#Edges)
     };
     N1#Edges = append(N1#Edges, E);
     N2#Edges = append(N2#Edges, E);
@@ -51,4 +53,3 @@ makeFlowerGraph (ZZ, ZZ, ZZ) := (PetalCount, EdgeCount, RootCount) -> (
     G
 );
 
-G = makeFlowerGraph (3,3,20);
