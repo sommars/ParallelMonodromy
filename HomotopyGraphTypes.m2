@@ -53,3 +53,18 @@ makeFlowerGraph (ZZ, ZZ, ZZ) := (PetalCount, EdgeCount, RootCount) -> (
     G
 );
 
+--------------------------------------------------------------------------------
+PathTracker = new Type of MutableHashTable;
+newPathTracker = method()
+newPathTracker (ZZ, HomotopyEdge, ZZ, HomotopyNode) := (iTimeTillComplete, iEdge, iStartSolution, iTargetNode) -> (
+    new PathTracker from {
+        TimeTillComplete => iTimeTillComplete,
+        Edge => iEdge,
+        --SourceNode => select(1, {iEdge#Node1, iEdge#Node2}, a -> a=!=iTargetNode);
+        SourceNode => if iTargetNode === iEdge#Node1 then iEdge#Node2 else iEdge#Node1;
+        TargetNode => iTargetNode,
+        StartSolution => iStartSolution
+    }
+);
+
+--peek newPathTracker(3,new HomotopyEdge,4,new HomotopyNode)
