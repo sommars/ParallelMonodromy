@@ -53,6 +53,47 @@ makeFlowerGraph (ZZ, ZZ, ZZ) := (PetalCount, EdgeCount, RootCount) -> (
     G
 );
 
+setUpGraphs = method()
+setUpGraphs (Function) := (graphCreator) -> (
+    (fuzzifyGraph graphCreator(), concretifyGraph graphCreator())
+);
+
+fuzzifyGraph = method()
+fuzzifyGraph (HomotopyGraph) := (G) -> (
+    d := G#RootCount;
+    G#EdgesBeingTracked = new MutableList from {};
+    for N in G#Nodes do (    -----making nodes fuzzy----
+        N#SolutionCount = 1;
+        (N#Solutions)#(random(0,d-1)) = true;
+        N#ExpectedValue = 1;
+    );
+    for E in G#Edges do (    -----making edges fuzzy----
+        E#UpdateExpectedValue =
+            (targetNode,value) -> (
+                assert ((targetNode === E#Node1) or (targetNode === E#Node2));
+                if targetNode === E#Node2 then E#RightExpectedValue = value
+                else E#LeftExpectedValue = value;
+            );
+        E#UpdateExpectedValue(E#Node1,(d-1.0)/d);
+        E#UpdateExpectedValue(E#Node2,(d-1.0)/d);
+        E#TrackersOnThisEdge = new MutableList from {};
+    );
+    new FuzzyGraph from G
+);
+
+concretifyGraph = method() 
+concretifyGraph (HomotopyGraph) := (G) -> ( 
+    d := G#RootCount;
+    for E in G#Edges do (
+        shuffledList := random toList (0..(d-1));
+        E#CorrespondenceList = for i in 0..d-1 list {i,shuffledList#i};
+    );
+    new ConcreteGraph from G
+);
+
+--(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
+--print class concreteGraph
+
 --------------------------------------------------------------------------------
 PathTracker = new Type of MutableHashTable;
 newPathTracker = method()
@@ -60,8 +101,7 @@ newPathTracker (ZZ, HomotopyEdge, ZZ, HomotopyNode) := (iTimeTillComplete, iEdge
     new PathTracker from {
         TimeTillComplete => iTimeTillComplete,
         Edge => iEdge,
-        --SourceNode => select(1, {iEdge#Node1, iEdge#Node2}, a -> a=!=iTargetNode);
-        SourceNode => if iTargetNode === iEdge#Node1 then iEdge#Node2 else iEdge#Node1;
+        SourceNode => if iTargetNode === iEdge#Node1 then iEdge#Node2 else iEdge#Node1,
         TargetNode => iTargetNode,
         StartSolution => iStartSolution
     }
