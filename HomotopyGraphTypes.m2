@@ -53,11 +53,11 @@ makeFlowerGraph (ZZ, ZZ, ZZ) := (PetalCount, EdgeCount, RootCount) -> (
     G
 );
 
-setUpGraphs = method()
-setUpGraphs (Function) := (graphCreator) -> (
-    (fuzzifyGraph graphCreator(), concretifyGraph graphCreator())
-);
-
+--------------------------------------------------------------------------------
+----From a HomotopyGraph, makes it into a FuzzyGraph. Randomly chooses a--------
+----solution at each node to "know", without knowing any correspondences,-------
+----and sets the expected values accordingly.-----------------------------------
+--------------------------------------------------------------------------------
 fuzzifyGraph = method()
 fuzzifyGraph (HomotopyGraph) := (G) -> (
     d := G#RootCount;
@@ -81,9 +81,17 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
     new FuzzyGraph from G
 );
 
-concretifyGraph = method() 
-concretifyGraph (HomotopyGraph) := (G) -> ( 
+--------------------------------------------------------------------------------
+----From a HomotopyGraph, fills in the correspondences randomly and sets--------
+----node data so that the graph has been "solved".------------------------------
+--------------------------------------------------------------------------------
+completifyGraph = method() 
+completifyGraph (HomotopyGraph) := (G) -> ( 
     d := G#RootCount;
+    for N in G#Nodes do (
+        N#SolutionCount = d;
+        for i in 0..(d-1) do N#Solutions#i = true;
+    );
     for E in G#Edges do (
         shuffledList := random toList (0..(d-1));
         E#CorrespondenceList = for i in 0..d-1 list {i,shuffledList#i};
@@ -91,8 +99,13 @@ concretifyGraph (HomotopyGraph) := (G) -> (
     new ConcreteGraph from G
 );
 
---(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
---print class concreteGraph
+setUpGraphs = method()
+setUpGraphs (Function) := (graphCreator) -> (
+    (fuzzifyGraph graphCreator(), completifyGraph graphCreator())
+);
+
+(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
+print class concreteGraph
 
 --------------------------------------------------------------------------------
 PathTracker = new Type of MutableHashTable;
