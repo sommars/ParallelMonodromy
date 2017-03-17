@@ -4,13 +4,17 @@ HomotopyGraph = new Type of MutableHashTable
 
 ConcreteGraph = new Type of HomotopyGraph
 FuzzyGraph = new Type of ConcreteGraph
+HomotopyDirectedEdge = new Type of HomotopyEdge
+
+BasicList | BasicList := (l1,l2) -> new (class l1) from (toList(l1)|toList(l2));
 
 newGraph = method()
 newGraph (ZZ) := (InputRootCount) -> (
     G := new HomotopyGraph from {
         RootCount => InputRootCount,
         Nodes => new MutableList from {},
-        Edges => new MutableList from {}
+        DirectedEdges => new MutableList from {},
+        HalfTheEdges => new MutableList from {}
     };
     G
 );
@@ -18,7 +22,8 @@ newGraph (ZZ) := (InputRootCount) -> (
 addNode = method()
 addNode (HomotopyGraph) := (G) -> (
     N := new HomotopyNode from {
-        Edges => new MutableList from {},
+        OutgoingEdges => new MutableList from {},
+        IncomingEdges => new MutableList from {},
         Solutions => new MutableList from (for i in 1..G#RootCount list false),
         SolutionCount => 0,
         ID => #(G#Nodes)
@@ -27,19 +32,34 @@ addNode (HomotopyGraph) := (G) -> (
     N
 );
 
+--------------------------------------------------------------------------------
+--- N1 ===E1==> N2 -------------------------------------------------------------
+--- N1 <==E2=== N2 -------------------------------------------------------------
+--------------------------------------------------------------------------------
 addEdge = method()
 addEdge (HomotopyGraph, HomotopyNode, HomotopyNode) := (G, N1, N2) -> (
-    E := new HomotopyEdge from {
-        Node1 => N1,
-        Node2 => N2,
+    E1 := new HomotopyDirectedEdge from {
+        SourceNode => N1,
+        TargetNode => N2,
         Graph => G,
         CorrespondenceList => new MutableList from {},
-        ID => #(G#Edges)
+        ID => #(G#DirectedEdges)
     };
-    N1#Edges = append(N1#Edges, E);
-    N2#Edges = append(N2#Edges, E);
-    G#Edges = append(G#Edges, E);
-    E
+    E2 := new HomotopyDirectedEdge from {
+        SourceNode => N2,
+        TargetNode => N1,
+        Graph => G,
+        CorrespondenceList => new MutableList from {},
+        ID => #(G#DirectedEdges) + 1
+    };
+    E1#OtherEdge = E2;
+    E2#OtherEdge = E1;
+    N1#OutgoingEdges = append(N1#OutgoingEdges, E1);
+    N2#OutgoingEdges = append(N2#OutgoingEdges, E2);
+    N2#IncomingEdges = append(N2#IncomingEdges, E1);
+    N1#IncomingEdges = append(N1#IncomingEdges, E2);
+    G#DirectedEdges = G#DirectedEdges|{E1,E2};
+    G#HalfTheEdges = append(G#HalfTheEdges, E1);
 );
 
 makeFlowerGraph = method()
@@ -67,6 +87,12 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
         (N#Solutions)#(random(0,d-1)) = true;
         N#ExpectedValue = 1;
     );
+    for E in G#DirectedEdges do (    -----making edges fuzzy----
+        E#ExpectedValue = (d-1.0)/d;
+        E#TrackersOnThisEdge = new MutableList from {};
+        E#NumberTrackableEdges = 1;
+    );
+    {*
     for E in G#Edges do (    -----making edges fuzzy----
         E#UpdateExpectedValue =
             (targetNode,value) -> (
@@ -77,7 +103,7 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
         E#UpdateExpectedValue(E#Node1,(d-1.0)/d);
         E#UpdateExpectedValue(E#Node2,(d-1.0)/d);
         E#TrackersOnThisEdge = new MutableList from {};
-    );
+    ); *}
     new FuzzyGraph from G
 );
 
@@ -92,9 +118,11 @@ completifyGraph (HomotopyGraph) := (G) -> (
         N#SolutionCount = d;
         for i in 0..(d-1) do N#Solutions#i = true;
     );
-    for E in G#Edges do (
+    for E in G#HalfTheEdges do (
         shuffledList := random toList (0..(d-1));
-        E#CorrespondenceList = for i in 0..d-1 list {i,shuffledList#i};
+        shuffledList = for i in 0..d-1 list {i,shuffledList#i};
+        E#CorrespondenceList = shuffledList;
+        E#OtherEdge#CorrespondenceList = sort apply(shuffledList,a->{a#1,a#0});
     );
     new ConcreteGraph from G
 );
@@ -104,20 +132,16 @@ setUpGraphs (Function) := (graphCreator) -> (
     (fuzzifyGraph graphCreator(), completifyGraph graphCreator())
 );
 
-(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
-print class concreteGraph
+--(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
 
 --------------------------------------------------------------------------------
 PathTracker = new Type of MutableHashTable;
 newPathTracker = method()
-newPathTracker (ZZ, HomotopyEdge, ZZ, HomotopyNode) := (iTimeTillComplete, iEdge, iStartSolution, iTargetNode) -> (
+newPathTracker (HomotopyDirectedEdge, ZZ) := (iEdge, iStartSolution) -> (
     new PathTracker from {
-        TimeTillComplete => iTimeTillComplete,
         Edge => iEdge,
-        SourceNode => if iTargetNode === iEdge#Node1 then iEdge#Node2 else iEdge#Node1,
-        TargetNode => iTargetNode,
         StartSolution => iStartSolution
     }
 );
 
---peek newPathTracker(3,new HomotopyEdge,4,new HomotopyNode)
+--peek newPathTracker(new HomotopyDirectedEdge,4)
