@@ -53,5 +53,6 @@ choosePath (FuzzyGraph) := (G) -> (
             maxEdgesDirection = append(maxEdgesDirection, {E,E#Node2});
         );
     );
-    maxEdgesDirections#0;
+    pairToTrack := maxEdgesDirections#0;
+    --newPathTracker(0, pairToTrack#0, ???????what??????
 );
