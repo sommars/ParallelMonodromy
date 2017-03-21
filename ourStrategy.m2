@@ -7,26 +7,24 @@ load("HomotopyGraphTypes.m2")
 --------------------------------------------------------------------------------
 pathFinished = method()
 pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
-    targetNode := tracker#TargetNode;
-    sourceNode := tracker#SourceNode;
-    G := targetNode#Graph;
-    d := G#RootCount;
-    thisEdge := tracker#Edge;
+    thisDirectedEdge := tracker#Edge;
+    destNode := thisDirectedEdge#TargetNode;
+    sourceNode := thisDirectedEdge#SourceNode;
 
-    --update correspondences
-    tracker#Edge#CorrespondenceList = append(tracker#Edge#CorrespondenceList, {tracker#StartSolution,newSolutionIndex});
-
-    targetNode#Solutions#newSolutionIndex = true;
-    targetNode#SolutionCount = targetNode#SolutionCount+1;
-
-    --update expected values of edges coming into tracker#TargetNode
-    TargetNode#ExpectedValue = TargetNode#SolutionCount;
-    for E in tracker#TargetNode#Edges do (
-        futureCorrespondences := #positions(thisEdge#TrackersOnThisEdge,
-            a -> (a#TargetNode === targetNode) and (a#SourceNode === sourceNode));
-        newValue := (d-TargetNode#ExpectedValue)/(d - #(E#CorrespondenceList) - futureCorrespondences);
-        E#UpdateExpectedValue(targetNode, newValue);
+    ----update correspondences----
+    newCorr := {tracker#StartSolution,newSolutionIndex};
+    thisDirectedEdge#Correspondences#newCorr#0 = newCorr#1;
+    thisDirectedEdge#OtherEdge#Correspondences#newCorr#1 = newCorr#0;
+    if destNode#Solutions#newSolutionIndex == false then (  ---we found a new solution
+        destNode#Solutions#newSolutionIndex = true;
+        destNode#SolutionCount = destNode#SolutionCount+1;
+        for E in destNode#OutgoingEdges do (
+            E#TrackableSolutions#newSolutionIndex = 1;
+        );
     );
+    remove(thisDirectedEdge#OtherEdge#TrackableSolutions, newSolutionIndex);
+    thisDirectedEdge#TrackerCount = thisDirectedEdge#TrackerCount - 1;
+    recomputeExpectedValues(destNode);
 );
 
 --------------------------------------------------------------------------------
@@ -38,21 +36,35 @@ pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
 choosePath = method();
 choosePath (FuzzyGraph) := (G) -> (
     maxExpectedVal := 0;
-    maxEdgesDirections := new MutableList from {};
-    for E in G#Edges do (
-        if E#LeftExpectedValue > maxExpectedVal then (
-            maxExpectedVal = E#LeftExpectedValue;
-            maxEdgesDirection = new MutableList from {{E,E#Node1}};
-        ) else if E#LeftExpectedValue == maxExpectedVal then (
-            maxEdgesDirection = append(maxEdgesDirection, {E,E#Node1});
-        );
-        if E#RightExpectedValue > maxExpectedVal then (
-            maxExpectedVal = E#RightExpectedValue;
-            maxEdgesDirection = new MutableList from {{E,E#Node2}};
-        ) else if E#RightExpectedValue == maxExpectedVal then (
-            maxEdgesDirection = append(maxEdgesDirection, {E,E#Node2});
+    maxEdgeList := new MutableList from {};
+    for E in G#DirectedEdges do (
+        if #(E#TrackableSolutions)==0 then continue;
+        if E#ExpectedValue > maxExpectedVal then (
+            maxExpectedVal = E#ExpectedValue;
+            maxEdgeList = new MutableList from {E};
+        ) else if E#ExpectedValue == maxExpectedVal then (
+            maxEdgeList = append(maxEdgeList, E);
         );
     );
-    pairToTrack := maxEdgesDirections#0;
-    --newPathTracker(0, pairToTrack#0, ???????what??????
+    if #maxEdgeList==0 then return "no paths available";
+    edgeToTrack := maxEdgeList#0;
+    edgeToTrack#TrackerCount = edgeToTrack#TrackerCount + 1;
+    recomputeExpectedValues(edgeToTrack#TargetNode);
+);
+
+recomputeExpectedValues = method()
+recomputeExpectedValues (HomotopyNode) := (N) -> (
+    d := N#Graph#RootCount;
+    ----Update E(v^A) at the dest node v----
+    ----Uses Prop 2.3 and Prop 2.4-----
+    N#ExpectedValue = N#SolutionCount;
+    for E in N#IncomingEdges do (
+        currentTrackerCount := E#TrackerCount;
+        N#ExpectedValue = N#ExpectedValue + 
+            currentTrackerCount*(d-N#ExpectedValue)/(d - currentTrackerCount - #(E#Correspondences));
+    );
+    ----update expected values of edges coming into tracker#TargetNode-----
+    for E in N#IncomingEdges do (
+        E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+    );
 );
