@@ -42,14 +42,14 @@ addEdge (HomotopyGraph, HomotopyNode, HomotopyNode) := (G, N1, N2) -> (
         SourceNode => N1,
         TargetNode => N2,
         Graph => G,
-        CorrespondenceList => new MutableList from {},
+        Correspondences => new MutableHashTable from {},
         ID => #(G#DirectedEdges)
     };
     E2 := new HomotopyDirectedEdge from {
         SourceNode => N2,
         TargetNode => N1,
         Graph => G,
-        CorrespondenceList => new MutableList from {},
+        Correspondences => new MutableHashTable from {},
         ID => #(G#DirectedEdges) + 1
     };
     E1#OtherEdge = E2;
@@ -84,26 +84,17 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
     G#EdgesBeingTracked = new MutableList from {};
     for N in G#Nodes do (    -----making nodes fuzzy----
         N#SolutionCount = 1;
-        (N#Solutions)#(random(0,d-1)) = true;
+        knownSolution := (random(0,d-1));
+        (N#Solutions)#knownSolution = true;
         N#ExpectedValue = 1;
+        for E in N#OutgoingEdges do (
+            E#TrackableSolutions = new MutableHashTable from {knownSolution => 0};
+        );
     );
     for E in G#DirectedEdges do (    -----making edges fuzzy----
         E#ExpectedValue = (d-1.0)/d;
-        E#TrackersOnThisEdge = new MutableList from {};
-        E#NumberTrackableEdges = 1;
+        E#TrackerCount = 0;
     );
-    {*
-    for E in G#Edges do (    -----making edges fuzzy----
-        E#UpdateExpectedValue =
-            (targetNode,value) -> (
-                assert ((targetNode === E#Node1) or (targetNode === E#Node2));
-                if targetNode === E#Node2 then E#RightExpectedValue = value
-                else E#LeftExpectedValue = value;
-            );
-        E#UpdateExpectedValue(E#Node1,(d-1.0)/d);
-        E#UpdateExpectedValue(E#Node2,(d-1.0)/d);
-        E#TrackersOnThisEdge = new MutableList from {};
-    ); *}
     new FuzzyGraph from G
 );
 
@@ -120,9 +111,9 @@ completifyGraph (HomotopyGraph) := (G) -> (
     );
     for E in G#HalfTheEdges do (
         shuffledList := random toList (0..(d-1));
-        shuffledList = for i in 0..d-1 list {i,shuffledList#i};
-        E#CorrespondenceList = shuffledList;
-        E#OtherEdge#CorrespondenceList = sort apply(shuffledList,a->{a#1,a#0});
+        shuffledList = new MutableHashTable from for i in 0..d-1 list {i => shuffledList#i};
+        E#Correspondences = shuffledList;
+        E#OtherEdge#Correspondences = new MutableHashTable from apply(shuffledList#keys, a->{shuffledList#a => a});
     );
     new ConcreteGraph from G
 );
