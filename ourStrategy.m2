@@ -8,6 +8,7 @@ load("HomotopyGraphTypes.m2")
 pathFinished = method()
 pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
     thisDirectedEdge := tracker#Edge;
+    G := thisDirectedEdge#Graph;
     destNode := thisDirectedEdge#TargetNode;
     sourceNode := thisDirectedEdge#SourceNode;
 
@@ -21,6 +22,8 @@ pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
         for E in destNode#OutgoingEdges do (
             E#TrackableSolutions#newSolutionIndex = 1;
         );
+        if destNode#SolutionCount == G#RootCount then 
+            G#NumberOfCompleteNodes = G#NumberOfCompleteNodes + 1;
     );
     remove(thisDirectedEdge#OtherEdge#TrackableSolutions, newSolutionIndex);
     thisDirectedEdge#TrackerCount = thisDirectedEdge#TrackerCount - 1;
@@ -28,14 +31,14 @@ pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
 );
 
 --------------------------------------------------------------------------------
-----I don`t love the code repitition here, but this function loops through the--
-----edges_with_directions and finds the set of them with maximal expected-------
-----value. Currently, it just takes the first one it comes to, but in the-------
-----future we could try and pick between ties in some other way, if we want.----
+---Loops through the edges_with_directions and finds the set of them with-------
+---maximal expected value. Currently, it just takes the first one it comes to,--
+---but in the future we could try and pick between ties in some other way.------
 --------------------------------------------------------------------------------
 choosePath = method();
 choosePath (FuzzyGraph) := (G) -> (
     maxExpectedVal := 0;
+    d := G#RootCount;
     maxEdgeList := new MutableList from {};
     for E in G#DirectedEdges do (
         if #(E#TrackableSolutions)==0 then continue;
@@ -55,7 +58,7 @@ choosePath (FuzzyGraph) := (G) -> (
     for E in N#IncomingEdges do (
         E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
     );
-    solutionToTrack := keys(edgeToTrack#TrackableSolutions)#0;
+    solutionToTrack := (keys(edgeToTrack#TrackableSolutions))#0;
     remove(edgeToTrack#TrackableSolutions, solutionToTrack);
     (edgeToTrack, solutionToTrack)
 );
@@ -69,7 +72,7 @@ recomputeExpectedValues (HomotopyNode) := (N) -> (
     for E in N#IncomingEdges do (
         currentTrackerCount := E#TrackerCount;
         N#ExpectedValue = N#ExpectedValue + 
-            currentTrackerCount*(d-N#ExpectedValue)/(d - currentTrackerCount - #(E#Correspondences));
+            currentTrackerCount*(d - N#ExpectedValue)/(d - currentTrackerCount - #(E#Correspondences));
     );
     ----update expected values of edges coming into tracker#TargetNode-----
     for E in N#IncomingEdges do (
