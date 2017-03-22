@@ -14,7 +14,8 @@ newGraph (ZZ) := (InputRootCount) -> (
         RootCount => InputRootCount,
         Nodes => new MutableList from {},
         DirectedEdges => new MutableList from {},
-        HalfTheEdges => new MutableList from {}
+        HalfTheEdges => new MutableList from {},
+        NumberOfCompleteNodes => 0
     };
     G
 );
@@ -104,6 +105,7 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
 --------------------------------------------------------------------------------
 completifyGraph = method() 
 completifyGraph (HomotopyGraph) := (G) -> ( 
+    G#NumberOfCompleteNodes = #(G#Nodes);
     d := G#RootCount;
     for N in G#Nodes do (
         N#SolutionCount = d;
@@ -111,9 +113,9 @@ completifyGraph (HomotopyGraph) := (G) -> (
     );
     for E in G#HalfTheEdges do (
         shuffledList := random toList (0..(d-1));
-        shuffledList = new MutableHashTable from for i in 0..d-1 list {i => shuffledList#i};
+        shuffledList = new MutableHashTable from flatten for i in 0..d-1 list {i => shuffledList#i};
         E#Correspondences = shuffledList;
-        E#OtherEdge#Correspondences = new MutableHashTable from apply(shuffledList#keys, a->{shuffledList#a => a});
+        E#OtherEdge#Correspondences = new MutableHashTable from flatten apply(keys shuffledList, a->{shuffledList#a => a});
     );
     new ConcreteGraph from G
 );
@@ -123,16 +125,14 @@ setUpGraphs (Function) := (graphCreator) -> (
     (fuzzifyGraph graphCreator(), completifyGraph graphCreator())
 );
 
---(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
-
 --------------------------------------------------------------------------------
 PathTracker = new Type of MutableHashTable;
 newPathTracker = method()
-newPathTracker (HomotopyDirectedEdge, ZZ) := (iEdge, iStartSolution) -> (
+newPathTracker (HomotopyDirectedEdge, ZZ, ZZ) := (iEdge, iStartSolution, iTimeLeft) -> (
     new PathTracker from {
         Edge => iEdge,
         StartSolution => iStartSolution,
-        TimeLeft => 0
+        TimeLeft => iTimeLeft
     }
 );
 
@@ -140,3 +140,5 @@ newPathTracker (HomotopyDirectedEdge, ZZ) := (iEdge, iStartSolution) -> (
 PathTracker ? PathTracker := (t1, t2) -> return ((t1#TimeLeft) ? (t2#TimeLeft));
 
 --peek newPathTracker(new HomotopyDirectedEdge,4)
+
+(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
