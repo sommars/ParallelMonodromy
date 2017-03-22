@@ -48,8 +48,16 @@ choosePath (FuzzyGraph) := (G) -> (
     );
     if #maxEdgeList==0 then return "no paths available";
     edgeToTrack := maxEdgeList#0;
+    N := edgeToTrack#TargetNode;
     edgeToTrack#TrackerCount = edgeToTrack#TrackerCount + 1;
-    recomputeExpectedValues(edgeToTrack#TargetNode);
+    N#ExpectedValue = N#ExpectedValue + maxExpectedVal;
+    ----update expected values of edges coming into tracker#TargetNode-----
+    for E in N#IncomingEdges do (
+        E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+    );
+    solutionToTrack := keys(edgeToTrack#TrackableSolutions)#0;
+    remove(edgeToTrack#TrackableSolutions, solutionToTrack);
+    (edgeToTrack, solutionToTrack)
 );
 
 recomputeExpectedValues = method()
