@@ -131,8 +131,12 @@ newPathTracker = method()
 newPathTracker (HomotopyDirectedEdge, ZZ) := (iEdge, iStartSolution) -> (
     new PathTracker from {
         Edge => iEdge,
-        StartSolution => iStartSolution
+        StartSolution => iStartSolution,
+        TimeLeft => 0
     }
 );
+
+----so we can take the "min" of a tracker list to get the next one to finish----
+PathTracker ? PathTracker := (t1, t2) -> return ((t1#TimeLeft) ? (t2#TimeLeft));
 
 --peek newPathTracker(new HomotopyDirectedEdge,4)
