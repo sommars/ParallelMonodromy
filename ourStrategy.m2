@@ -49,7 +49,7 @@ choosePath (FuzzyGraph) := (G) -> (
             maxEdgeList = append(maxEdgeList, E);
         );
     );
-    if #maxEdgeList==0 then return "no paths available";
+    if #maxEdgeList==0 then return ("no paths available",0);
     edgeToTrack := maxEdgeList#0;
     N := edgeToTrack#TargetNode;
     edgeToTrack#TrackerCount = edgeToTrack#TrackerCount + 1;
@@ -57,10 +57,11 @@ choosePath (FuzzyGraph) := (G) -> (
     ---update expected values of edges coming into tracker#TargetNode
     ---need some criteria for setting this to 0. Like, if 
     for E in N#IncomingEdges do (
-        print "hello";
-        print (d - E#TrackerCount - #(E#Correspondences));
-        print "goodbye";
-        E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+        if (d - E#TrackerCount - #(E#Correspondences)) == 0 then (
+            E#ExpectedValue = 0;
+        ) else (
+            E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+        );
     );
     solutionToTrack := (keys(edgeToTrack#TrackableSolutions))#0;
     remove(edgeToTrack#TrackableSolutions, solutionToTrack);
@@ -74,12 +75,17 @@ recomputeExpectedValues (HomotopyNode) := (N) -> (
     ----Uses Prop 2.3 and Prop 2.4-----
     N#ExpectedValue = N#SolutionCount;
     for E in N#IncomingEdges do (
+        if (d - E#TrackerCount - #(E#Correspondences)) == 0 then continue;
         currentTrackerCount := E#TrackerCount;
         N#ExpectedValue = N#ExpectedValue + 
             currentTrackerCount*(d - N#ExpectedValue)/(d - currentTrackerCount - #(E#Correspondences));
     );
     ----update expected values of edges coming into tracker#TargetNode-----
     for E in N#IncomingEdges do (
-        E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+        if (d - E#TrackerCount - #(E#Correspondences)) == 0 then (
+            E#ExpectedValue = 0;
+        ) else (
+            E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+        );
     );
 );

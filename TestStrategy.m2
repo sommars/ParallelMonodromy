@@ -14,8 +14,8 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
     Data = new MutableHashTable from { ---performance data
         TotalTime => 0,
         TotalPathTracks => 0,
-        TracksTillNodeSolved => 0,
-        TimeTillNodeSolved => 0,
+        TracksTillNodeSolved => -1,
+        TimeTillNodeSolved => -1,
         TimeIdle => 0,
         GraphIsComplete => false,
         ExistsCompleteNode => false};
@@ -25,7 +25,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         numberAdded := 0;
         while numberAdded < (numThreads - #currentTrackerSet) do (
             (edgeToTrack, solutionToTrack) := choosePath(fuzzyGraph);
-            if instance(edgeToTrack, String) then break; ---no trackable paths!
+            if instance(edgeToTrack, String) then return numberAdded; ---no trackable paths!
             thisTracker := newPathTracker(edgeToTrack, solutionToTrack, trackerTimeGenerator());
             currentTrackerSet#thisTracker = 1;
             numberAdded = numberAdded+1;
@@ -44,6 +44,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
             ---completed our first node!
             Data#ExistsCompleteNode = true;
             Data#TimeTillNodeSolved = Data#TotalTime;
+            Data#TracksTillNodeSolved = Data#TotalPathTracks
         );
         numberStarted := fillTrackerList(); ----starting (possibly multiple) tracks
         if #currentTrackerSet == 0 then (
@@ -56,19 +57,18 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         nextFinishedTracker := min keys currentTrackerSet;
         remove(currentTrackerSet, nextFinishedTracker);
         timeIncrease := nextFinishedTracker#TimeLeft;
+
         ---look up correspondence in CompleteGraph, use it for pathFinished.
         edgeInCompleteGraph := completedGraph#DirectedEdges#(nextFinishedTracker#Edge#ID);
         startSol := nextFinishedTracker#StartSolution;
         pathFinished(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol);
+
         ---time-related updates. Idle thread time increases by (# of idle threads - 1)*timeIncrease
         ---since we just popped a tracker off the set.
         Data#TotalTime = Data#TotalTime + timeIncrease;
         Data#TimeIdle = Data#TimeIdle + (numThreads - #currentTrackerSet - 1)*timeIncrease;
 
         Data#TotalPathTracks = Data#TotalPathTracks + 1;
-        if Data#ExistsCompleteNode == false then (
-            Data#TracksTillNodeSolved = Data#TracksTillNodeSolved + 1;
-        );
         for tracker in keys currentTrackerSet do (
             tracker#TimeLeft = tracker#TimeLeft - timeIncrease;
         );
@@ -80,5 +80,6 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 nodeIsComplete = method();
 nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 
-(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20))
-simulateRun(concreteGraph, fuzzyGraph, 4)
+(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,20));
+performanceData := simulateRun(concreteGraph, fuzzyGraph, 4);
+print peek performanceData;
