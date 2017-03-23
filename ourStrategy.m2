@@ -23,9 +23,7 @@ pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
             E#TrackableSolutions#newSolutionIndex = 1;
         );
         if destNode#SolutionCount == G#RootCount then (
-            print ("Node "|toString(destNode#ID)|" finished!");
             G#NumberOfCompleteNodes = G#NumberOfCompleteNodes + 1;
-            print ("Current number of completed nodes: "|toString(G#NumberOfCompleteNodes));
         );
     );
     remove(thisDirectedEdge#OtherEdge#TrackableSolutions, newSolutionIndex);
