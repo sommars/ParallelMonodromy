@@ -26,10 +26,6 @@ pathFinishedRandom (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
 );
 
 --------------------------------------------------------------------------------
----Loops through the edges_with_directions and finds the set of them with-------
----maximal expected value. Currently, it just takes the first one it comes to,--
----but in the future we could try and pick between ties in some other way.------
---------------------------------------------------------------------------------
 choosePathRandom = method();
 choosePathRandom (FuzzyGraph) := (G) -> (
     CandidateEdges := new MutableHashTable from {};
