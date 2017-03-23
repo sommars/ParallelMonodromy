@@ -1,5 +1,5 @@
 load("HomotopyGraphTypes.m2");
-load("ourStrategy.m2")
+load("ourStrategy.m2");
 
 --------------------------------------------------------------------------------
 ----Given a completed (correspondences all filled in) graph, a fuzzy grph with--
@@ -12,6 +12,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
     trackerTimeGenerator := (None -> random(80,120));
     currentTrackerSet := new MutableHashTable from {}; ---set of current trackers
     Data = new MutableHashTable from { ---performance data
+        RootCount => d,
         TotalTime => 0,
         TotalPathTracks => 0,
         TracksTillNodeSolved => -1,
@@ -27,7 +28,6 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
             (edgeToTrack, solutionToTrack) := choosePath(fuzzyGraph);
             if instance(edgeToTrack, String) then return numberAdded; ---no trackable paths!
             thisTracker := newPathTracker(edgeToTrack, solutionToTrack, trackerTimeGenerator());
-            print (fuzzyGraph === (thisTracker#Edge#Graph));
             currentTrackerSet#thisTracker = 1;
             numberAdded = numberAdded+1;
         );
@@ -42,13 +42,16 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         --- Loop-stopping checks:
         if fuzzyGraph#NumberOfCompleteNodes == #(fuzzyGraph#Nodes) then (
             ---completed the graph!
+            Data#GraphIsComplete = true;
+            print "completed the graph!";
             break; 
         );
         if fuzzyGraph#NumberOfCompleteNodes > 0 and Data#ExistsCompleteNode == false then (
             ---completed our first node!
             Data#ExistsCompleteNode = true;
             Data#TimeTillNodeSolved = Data#TotalTime;
-            Data#TracksTillNodeSolved = Data#TotalPathTracks
+            Data#TracksTillNodeSolved = Data#TotalPathTracks;
+            return Data;
         );
         numberStarted := fillTrackerList(); ----starting (possibly multiple) tracks
         
@@ -86,9 +89,11 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 nodeIsComplete = method();
 nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 
-(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,20,a));
-performanceData := simulateRun(concreteGraph, fuzzyGraph, 4);
+{*
+(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,200,a));
+performanceData := simulateRun(concreteGraph, fuzzyGraph, 8);
 print peek performanceData;
 
 print fuzzyGraph#NumberOfCompleteNodes;
 print (for N in fuzzyGraph#Nodes list N#SolutionCount)
+*}
