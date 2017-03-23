@@ -34,6 +34,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         numberAdded
     );
 
+
     Data#TotalTime = 0;
     while true do (
         --print ("number of nodes according to TestStrategy: "|toString(fuzzyGraph#NumberOfCompleteNodes));
@@ -50,6 +51,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
             Data#TracksTillNodeSolved = Data#TotalPathTracks
         );
         numberStarted := fillTrackerList(); ----starting (possibly multiple) tracks
+        
         if #currentTrackerSet == 0 then (
             ---Uh oh. Nothing is running and nothing can run.
             ---Maybe means the "solution-refined graph" is a disconnected graph.
@@ -66,7 +68,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         edgeInCompleteGraph := completedGraph#DirectedEdges#(nextFinishedTracker#Edge#ID);
         startSol := nextFinishedTracker#StartSolution;
         pathFinished(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol);
-
+				
         ---time-related updates. Idle thread time increases by (# of idle threads - 1)*timeIncrease
         ---since we just popped a tracker off the set.
         Data#TotalTime = Data#TotalTime + timeIncrease;
@@ -84,7 +86,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 nodeIsComplete = method();
 nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 
-(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,20));
+(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,20,a));
 performanceData := simulateRun(concreteGraph, fuzzyGraph, 4);
 print peek performanceData;
 

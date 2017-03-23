@@ -9,8 +9,8 @@ HomotopyDirectedEdge = new Type of HomotopyEdge
 BasicList | BasicList := (l1,l2) -> new (class l1) from (toList(l1)|toList(l2));
 
 newGraph = method()
-newGraph (ZZ) := (InputRootCount) -> (
-    G := new HomotopyGraph from {
+newGraph (ZZ, Type) := (InputRootCount, HomotopyGraphType) -> (
+    G := new HomotopyGraphType from {
         RootCount => InputRootCount,
         Nodes => new MutableList from {},
         DirectedEdges => new MutableList from {},
@@ -65,8 +65,8 @@ addEdge (HomotopyGraph, HomotopyNode, HomotopyNode) := (G, N1, N2) -> (
 );
 
 makeFlowerGraph = method()
-makeFlowerGraph (ZZ, ZZ, ZZ) := (PetalCount, EdgeCount, RootCount) -> (
-    G := newGraph(RootCount);
+makeFlowerGraph (ZZ, ZZ, ZZ, Type) := (PetalCount, EdgeCount, RootCount, HomotopyGraphType) -> (
+    G := newGraph(RootCount, HomotopyGraphType);
     N := addNode(G);
     for i in 1..PetalCount do (
         newNode := addNode(G);
@@ -97,7 +97,7 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
         E#ExpectedValue = (d-1.0)/d;
         E#TrackerCount = 0;
     );
-    new FuzzyGraph from G
+    G
 );
 
 --------------------------------------------------------------------------------
@@ -118,12 +118,12 @@ completifyGraph (HomotopyGraph) := (G) -> (
         E#Correspondences = shuffledList;
         E#OtherEdge#Correspondences = new MutableHashTable from flatten apply(keys shuffledList, a->{shuffledList#a => a});
     );
-    new ConcreteGraph from G
+    G
 );
 
 setUpGraphs = method()
 setUpGraphs (Function) := (graphCreator) -> (
-    (fuzzifyGraph graphCreator(), completifyGraph graphCreator())
+    (fuzzifyGraph graphCreator(FuzzyGraph), completifyGraph graphCreator(ConcreteGraph))
 );
 
 --------------------------------------------------------------------------------
@@ -141,5 +141,3 @@ newPathTracker (HomotopyDirectedEdge, ZZ, ZZ) := (iEdge, iStartSolution, iTimeLe
 PathTracker ? PathTracker := (t1, t2) -> return ((t1#TimeLeft) ? (t2#TimeLeft));
 
 --peek newPathTracker(new HomotopyDirectedEdge,4)
-
-(fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,3,20));
