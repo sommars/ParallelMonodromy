@@ -23,6 +23,7 @@ newGraph (ZZ) := (InputRootCount) -> (
 addNode = method()
 addNode (HomotopyGraph) := (G) -> (
     N := new HomotopyNode from {
+        Graph => G,
         OutgoingEdges => new MutableList from {},
         IncomingEdges => new MutableList from {},
         Solutions => new MutableList from (for i in 1..G#RootCount list false),
