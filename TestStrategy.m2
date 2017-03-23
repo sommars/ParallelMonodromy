@@ -35,6 +35,8 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 
     Data#TotalTime = 0;
     while true do (
+        print ("number of nodes according to TestStrategy: "|toString(fuzzyGraph#NumberOfCompleteNodes));
+        --print (for N in fuzzyGraph#Nodes list N#SolutionCount);
         --- Loop-stopping checks:
         if fuzzyGraph#NumberOfCompleteNodes == #(fuzzyGraph#Nodes) then (
             ---completed the graph!
@@ -83,3 +85,6 @@ nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 (fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,20));
 performanceData := simulateRun(concreteGraph, fuzzyGraph, 4);
 print peek performanceData;
+
+print fuzzyGraph#NumberOfCompleteNodes
+print (for N in fuzzyGraph#Nodes list N#SolutionCount)
