@@ -14,8 +14,8 @@ pathFinished (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
 
     ----update correspondences----
     newCorr := {tracker#StartSolution,newSolutionIndex};
-    thisDirectedEdge#Correspondences#newCorr#0 = newCorr#1;
-    thisDirectedEdge#OtherEdge#Correspondences#newCorr#1 = newCorr#0;
+    thisDirectedEdge#Correspondences#(newCorr#0) = newCorr#1;
+    thisDirectedEdge#OtherEdge#Correspondences#(newCorr#1) = newCorr#0;
     if destNode#Solutions#newSolutionIndex == false then (  ---we found a new solution
         destNode#Solutions#newSolutionIndex = true;
         destNode#SolutionCount = destNode#SolutionCount+1;
@@ -54,8 +54,12 @@ choosePath (FuzzyGraph) := (G) -> (
     N := edgeToTrack#TargetNode;
     edgeToTrack#TrackerCount = edgeToTrack#TrackerCount + 1;
     N#ExpectedValue = N#ExpectedValue + maxExpectedVal;
-    ----update expected values of edges coming into tracker#TargetNode-----
+    ---update expected values of edges coming into tracker#TargetNode
+    ---need some criteria for setting this to 0. Like, if 
     for E in N#IncomingEdges do (
+        print "hello";
+        print (d - E#TrackerCount - #(E#Correspondences));
+        print "goodbye";
         E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
     );
     solutionToTrack := (keys(edgeToTrack#TrackableSolutions))#0;
