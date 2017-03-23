@@ -1,13 +1,13 @@
-load("HomotopyGraphTypes.m2");
-load("ourStrategy.m2");
+load("randomStrategy.m2")
 
 --------------------------------------------------------------------------------
 ----Given a completed (correspondences all filled in) graph, a fuzzy grph with--
 ----just one known solution per node, and a number of threads, runs the---------
 ----strategy and returns useful information about its performance.--------------
 --------------------------------------------------------------------------------
-simulateRun = method();
-simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numThreads) -> (
+simulateRun = method(Options => {UseRandomStrategy => false});
+simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph, numThreads) -> (
+
     d := completedGraph#RootCount;
     trackerTimeGenerator := (None -> random(80,120));
     currentTrackerSet := new MutableHashTable from {}; ---set of current trackers
@@ -20,12 +20,15 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         TimeIdle => 0,
         GraphIsComplete => false,
         ExistsCompleteNode => false};
-
     ---function for filling up the tracker list. returns number of new trackers created.
     fillTrackerList := None -> (
         numberAdded := 0;
         while numberAdded <= (numThreads - #currentTrackerSet) do (
-            (edgeToTrack, solutionToTrack) := choosePath(fuzzyGraph);
+            if o.UseRandomStrategy then (
+                (edgeToTrack, solutionToTrack) := choosePathRandom(fuzzyGraph);
+            ) else (
+                (edgeToTrack, solutionToTrack) = choosePath(fuzzyGraph);
+            );
             if instance(edgeToTrack, String) then return numberAdded; ---no trackable paths!
             thisTracker := newPathTracker(edgeToTrack, solutionToTrack, trackerTimeGenerator());
             currentTrackerSet#thisTracker = 1;
@@ -33,7 +36,6 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         );
         numberAdded
     );
-
 
     Data#TotalTime = 0;
     while true do (
@@ -70,7 +72,11 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
         ---look up correspondence in CompleteGraph, use it for pathFinished.
         edgeInCompleteGraph := completedGraph#DirectedEdges#(nextFinishedTracker#Edge#ID);
         startSol := nextFinishedTracker#StartSolution;
-        pathFinished(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol);
+        
+        if o.UseRandomStrategy then
+            pathFinishedRandom(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol)
+        else
+            pathFinished(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol);
 				
         ---time-related updates. Idle thread time increases by (# of idle threads - 1)*timeIncrease
         ---since we just popped a tracker off the set.
