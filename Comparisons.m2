@@ -11,14 +11,25 @@ load("TestStrategy.m2");
 *}
 runComparison = method();
 runComparison (Function, ZZ, ZZ) := (graphCreator, numberThreads, numberTrials) -> (
-    for i in 1..numberTrials list (
+    toReturn := new MutableHashTable from {
+        GraphIsComplete => {},
+        TotalTime =>  {},
+        TotalPathTracks =>  {},
+        TimeIdle =>  {}};
+    for i in 0..(numberTrials-1) list (
         setRandomSeed(i);
         (fuzzyGraph, concreteGraph) = setUpGraphs(graphCreator);
         performanceData := simulateRun(concreteGraph, fuzzyGraph, numberThreads);
         --performanceData#TotalPathTracks
-        performanceData#TimeIdle
-    )
+        --performanceData#TimeIdle
+        for k in keys toReturn do (
+            toReturn#k = append(toReturn#k, performanceData#k);
+        );
+    );
+    print (peek toReturn);
 );
-time runComparison((a -> makeFlowerGraph(3,2,2000,a)), 8, 5)
-time runComparison((a -> makeFlowerGraph(3,2,3000,a)), 8, 5)
-time runComparison((a -> makeFlowerGraph(3,2,4000,a)), 8, 5)
+numberThreads := 8;
+numberTrials := 5;
+time runComparison((a -> makeFlowerGraph(3,2,2000,a)), numberThreads, numberTrials)
+--time runComparison((a -> makeFlowerGraph(3,2,3000,a)), 8, 5)
+--time runComparison((a -> makeFlowerGraph(3,2,4000,a)), 8, 5)

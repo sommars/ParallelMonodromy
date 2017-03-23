@@ -58,10 +58,11 @@ choosePath (FuzzyGraph) := (G) -> (
     ---update expected values of edges coming into tracker#TargetNode
     ---need some criteria for setting this to 0. Like, if 
     for E in N#IncomingEdges do (
-        if (d - E#TrackerCount - #(E#Correspondences)) == 0 then (
+        denominator := (d - E#TrackerCount - #(E#Correspondences));
+        if denominator == 0 then (
             E#ExpectedValue = 0;
         ) else (
-            E#ExpectedValue = (d - N#ExpectedValue)/(d - E#TrackerCount - #(E#Correspondences));
+            E#ExpectedValue = (d - N#ExpectedValue)/denominator;
         );
     );
     solutionToTrack := (keys(edgeToTrack#TrackableSolutions))#0;
@@ -76,10 +77,11 @@ recomputeExpectedValues (HomotopyNode) := (N) -> (
     ----Uses Prop 2.3 and Prop 2.4-----
     N#ExpectedValue = N#SolutionCount;
     for E in N#IncomingEdges do (
-        if (d - E#TrackerCount - #(E#Correspondences)) == 0 then continue;
+        denominator := (d - E#TrackerCount - #(E#Correspondences));
+        if denominator == 0 then continue;
         currentTrackerCount := E#TrackerCount;
         N#ExpectedValue = N#ExpectedValue + 
-            currentTrackerCount*(d - N#ExpectedValue)/(d - currentTrackerCount - #(E#Correspondences));
+            currentTrackerCount*(d - N#ExpectedValue)/denominator;
     );
     ----update expected values of edges coming into tracker#TargetNode-----
     for E in N#IncomingEdges do (
