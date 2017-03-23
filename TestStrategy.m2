@@ -23,10 +23,11 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
     ---function for filling up the tracker list. returns number of new trackers created.
     fillTrackerList := None -> (
         numberAdded := 0;
-        while numberAdded < (numThreads - #currentTrackerSet) do (
+        while numberAdded <= (numThreads - #currentTrackerSet) do (
             (edgeToTrack, solutionToTrack) := choosePath(fuzzyGraph);
             if instance(edgeToTrack, String) then return numberAdded; ---no trackable paths!
             thisTracker := newPathTracker(edgeToTrack, solutionToTrack, trackerTimeGenerator());
+            print (fuzzyGraph === (thisTracker#Edge#Graph));
             currentTrackerSet#thisTracker = 1;
             numberAdded = numberAdded+1;
         );
@@ -35,7 +36,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 
     Data#TotalTime = 0;
     while true do (
-        print ("number of nodes according to TestStrategy: "|toString(fuzzyGraph#NumberOfCompleteNodes));
+        --print ("number of nodes according to TestStrategy: "|toString(fuzzyGraph#NumberOfCompleteNodes));
         --print (for N in fuzzyGraph#Nodes list N#SolutionCount);
         --- Loop-stopping checks:
         if fuzzyGraph#NumberOfCompleteNodes == #(fuzzyGraph#Nodes) then (
@@ -57,6 +58,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := (completedGraph, fuzzyGraph, numT
 
         ---pop tracker w/ smallest TimeLeft. Its TimeLeft is how much time has "passed".
         nextFinishedTracker := min keys currentTrackerSet;
+        --print (nextFinishedTracker#Edge#Graph === fuzzyGraph);
         remove(currentTrackerSet, nextFinishedTracker);
         timeIncrease := nextFinishedTracker#TimeLeft;
 
@@ -86,5 +88,5 @@ nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 performanceData := simulateRun(concreteGraph, fuzzyGraph, 4);
 print peek performanceData;
 
-print fuzzyGraph#NumberOfCompleteNodes
+print fuzzyGraph#NumberOfCompleteNodes;
 print (for N in fuzzyGraph#Nodes list N#SolutionCount)
