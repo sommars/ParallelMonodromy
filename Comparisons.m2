@@ -9,8 +9,8 @@ load("TestStrategy.m2");
         GraphIsComplete => false,
         ExistsCompleteNode => false
 *}
-runComparison = method();
-runComparison (Function, ZZ, ZZ) := (graphCreator, numberThreads, numberTrials) -> (
+runComparison = method(Options => {UseRandomStrategy => false});
+runComparison (Function, ZZ, ZZ) := o -> (graphCreator, numberThreads, numberTrials) -> (
     toReturn := new MutableHashTable from {
         GraphIsComplete => {},
         TotalTime =>  {},
@@ -19,17 +19,22 @@ runComparison (Function, ZZ, ZZ) := (graphCreator, numberThreads, numberTrials) 
     for i in 0..(numberTrials-1) list (
         setRandomSeed(i);
         (fuzzyGraph, concreteGraph) = setUpGraphs(graphCreator);
-        performanceData := simulateRun(concreteGraph, fuzzyGraph, numberThreads);
+        performanceData := simulateRun(concreteGraph, fuzzyGraph, numberThreads, UseRandomStrategy => o.UseRandomStrategy);
         --performanceData#TotalPathTracks
         --performanceData#TimeIdle
         for k in keys toReturn do (
             toReturn#k = append(toReturn#k, performanceData#k);
         );
     );
+    << "RandomStrategyUsed = " << o.UseRandomStrategy << endl;
     print (peek toReturn);
 );
 numberThreads := 8;
 numberTrials := 5;
-time runComparison((a -> makeFlowerGraph(3,2,2000,a)), numberThreads, numberTrials)
+time runComparison((a -> makeFlowerGraph(3,2,2000,a)), numberThreads, numberTrials, UseRandomStrategy => true)
 --time runComparison((a -> makeFlowerGraph(3,2,3000,a)), 8, 5)
 --time runComparison((a -> makeFlowerGraph(3,2,4000,a)), 8, 5)
+
+
+--(fuzzyGraph, concreteGraph) = setUpGraphs((a -> makeFlowerGraph(3,2,10,a)));
+--performanceData := simulateRun(concreteGraph, fuzzyGraph, 1);	

@@ -94,7 +94,7 @@ fuzzifyGraph (HomotopyGraph) := (G) -> (
         );
     );
     for E in G#DirectedEdges do (    -----making edges fuzzy----
-        E#ExpectedValue = (d-1.0)/d;
+        E#ExpectedValue = (d-1)/d;
         E#TrackerCount = 0;
     );
     G
