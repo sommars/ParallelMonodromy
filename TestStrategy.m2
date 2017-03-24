@@ -7,6 +7,14 @@ load("randomStrategy.m2");
 ----just one known solution per node, and a number of threads, runs the---------
 ----strategy and returns useful information about its performance.--------------
 --------------------------------------------------------------------------------
+----General idea: we maintain a set of trackers that are "currently" running.---
+----Each has a time until completion. We pop the smallest one, increment the----
+----total runtime by its timeLeft, and update fuzzyGraph based on what the------
+----tracker would have found, which we look up in completedGraph. We then-------
+----refill the tracker set. All the while, we maintain information about the----
+----performance of the method in the Data hashtable, which we return at the-----
+----end.------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 simulateRun = method(Options => {UseRandomStrategy => false});
 simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph, numThreads) -> (
 
@@ -20,13 +28,15 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
         TracksTillNodeSolved => -1,
         TimeTillNodeSolved => -1,
         TimeIdle => 0,
-        CorrespondenceCollisions => 0,
+        CorrespondenceCollisions => 0, --i.e. # of times an edge found a preexisting corr.
+                                       --Can happen when two threads track in opposite directions.
         GraphIsComplete => false,
         ExistsCompleteNode => false};
-    ---function for filling up the tracker list. returns number of new trackers created.
+    ---function for filling up the tracker list. returns the number of new trackers created.
     fillTrackerList := None -> (
         numberAdded := 0;
-        while numberAdded <= (numThreads - #currentTrackerSet) do (
+        emptySlots := (numThreads - #currentTrackerSet);
+        while numberAdded < emptySlots do (
             if o.UseRandomStrategy then (
                 (edgeToTrack, solutionToTrack) := choosePathRandom(fuzzyGraph);
             ) else (
@@ -42,15 +52,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
 
     Data#TotalTime = 0;
     while true do (
-        --print ("number of nodes according to TestStrategy: "|toString(fuzzyGraph#NumberOfCompleteNodes));
-        --print (for N in fuzzyGraph#Nodes list N#SolutionCount);
         --- Loop-stopping checks:
-        if fuzzyGraph#NumberOfCompleteNodes == #(fuzzyGraph#Nodes) then (
-            ---completed the graph!
-            Data#GraphIsComplete = true;
-            print "completed the graph!";
-            break; 
-        );
         if fuzzyGraph#NumberOfCompleteNodes > 0 and Data#ExistsCompleteNode == false then (
             ---completed our first node!
             Data#ExistsCompleteNode = true;
@@ -58,6 +60,13 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
             Data#TracksTillNodeSolved = Data#TotalPathTracks;
             return Data;
         );
+        if fuzzyGraph#NumberOfCompleteNodes == #(fuzzyGraph#Nodes) then (
+            ---completed the graph!
+            Data#GraphIsComplete = true;
+            print "completed the graph!";
+            break; 
+        );
+
         numberStarted := fillTrackerList(); ----starting (possibly multiple) tracks
         
         if #currentTrackerSet == 0 then (
@@ -68,7 +77,6 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
 
         ---pop tracker w/ smallest TimeLeft. Its TimeLeft is how much time has "passed".
         nextFinishedTracker := min keys currentTrackerSet;
-        --print (nextFinishedTracker#Edge#Graph === fuzzyGraph);
         remove(currentTrackerSet, nextFinishedTracker);
         timeIncrease := nextFinishedTracker#TimeLeft;
 
@@ -93,11 +101,12 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
         );
 
         Data#TotalPathTracks = Data#TotalPathTracks + 1;
+
+        ---"timeIncrease" time has passed, so we subtract it from the timeLeft of all trackers.
         for tracker in keys currentTrackerSet do (
             tracker#TimeLeft = tracker#TimeLeft - timeIncrease;
         );
     );
-
     return Data;
 );
 
