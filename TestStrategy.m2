@@ -1,5 +1,6 @@
 load("HomotopyGraphTypes.m2");
 load("OurStrategy.m2");
+load("randomStrategy.m2");
 
 --------------------------------------------------------------------------------
 ----Given a completed (correspondences all filled in) graph, a fuzzy grph with--
@@ -19,6 +20,7 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
         TracksTillNodeSolved => -1,
         TimeTillNodeSolved => -1,
         TimeIdle => 0,
+        CorrespondenceCollisions => 0,
         GraphIsComplete => false,
         ExistsCompleteNode => false};
     ---function for filling up the tracker list. returns number of new trackers created.
@@ -73,16 +75,22 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
         ---look up correspondence in CompleteGraph, use it for pathFinished.
         edgeInCompleteGraph := completedGraph#DirectedEdges#(nextFinishedTracker#Edge#ID);
         startSol := nextFinishedTracker#StartSolution;
-        
+        if nextFinishedTracker#Edge#Correspondences#?(nextFinishedTracker#StartSolution) then (
+            Data#CorrespondenceCollisions = Data#CorrespondenceCollisions + 1;
+        );
+
         if o.UseRandomStrategy then
             pathFinishedRandom(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol)
         else
             pathFinished(nextFinishedTracker, edgeInCompleteGraph#Correspondences#startSol);
-				
+
         ---time-related updates. Idle thread time increases by (# of idle threads - 1)*timeIncrease
         ---since we just popped a tracker off the set.
         Data#TotalTime = Data#TotalTime + timeIncrease;
-        Data#TimeIdle = Data#TimeIdle + (numThreads - #currentTrackerSet - 1)*timeIncrease;
+        idleThreadCount := (numThreads - #currentTrackerSet - 1);
+        if idleThreadCount>0 then (
+            Data#TimeIdle = (Data#TimeIdle) + idleThreadCount*timeIncrease;
+        );
 
         Data#TotalPathTracks = Data#TotalPathTracks + 1;
         for tracker in keys currentTrackerSet do (
@@ -93,10 +101,10 @@ simulateRun (ConcreteGraph, FuzzyGraph, ZZ) := o -> (completedGraph, fuzzyGraph,
     return Data;
 );
 
+{*
 nodeIsComplete = method();
 nodeIsComplete (HomotopyNode) := (N) -> (N#SolutionCount == N#Graph#RootCount);
 
-{*
 (fuzzyGraph, concreteGraph) = setUpGraphs(a -> makeFlowerGraph(3,2,200,a));
 performanceData := simulateRun(concreteGraph, fuzzyGraph, 8);
 print peek performanceData;

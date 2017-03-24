@@ -6,20 +6,22 @@ load("TestStrategy.m2");
         TracksTillNodeSolved => -1,
         TimeTillNodeSolved => -1,
         TimeIdle => 0,
+        CorrespondenceCollisions => 0;
         GraphIsComplete => false,
         ExistsCompleteNode => false
 *}
 runComparison = method(Options => {UseRandomStrategy => false});
-runComparison (Function, ZZ, ZZ) := o -> (graphCreator, numberThreads, numberTrials) -> (
+runComparison (Function, ZZ, ZZ) := o -> (graphCreator, numThreads, numTrials) -> (
     toReturn := new MutableHashTable from {
         GraphIsComplete => {},
         TotalTime =>  {},
         TotalPathTracks =>  {},
+        CorrespondenceCollisions => {},
         TimeIdle =>  {}};
-    for i in 0..(numberTrials-1) list (
+    for i in 0..(numTrials-1) list (
         setRandomSeed(i);
         (fuzzyGraph, concreteGraph) = setUpGraphs(graphCreator);
-        performanceData := simulateRun(concreteGraph, fuzzyGraph, numberThreads, UseRandomStrategy => o.UseRandomStrategy);
+        performanceData := simulateRun(concreteGraph, fuzzyGraph, numThreads, UseRandomStrategy => o.UseRandomStrategy);
         --performanceData#TotalPathTracks
         --performanceData#TimeIdle
         for k in keys toReturn do (
@@ -29,12 +31,10 @@ runComparison (Function, ZZ, ZZ) := o -> (graphCreator, numberThreads, numberTri
     << "RandomStrategyUsed = " << o.UseRandomStrategy << endl;
     print (peek toReturn);
 );
-numberThreads := 8;
-numberTrials := 5;
-time runComparison((a -> makeFlowerGraph(3,2,2000,a)), numberThreads, numberTrials, UseRandomStrategy => true)
---time runComparison((a -> makeFlowerGraph(3,2,3000,a)), 8, 5)
---time runComparison((a -> makeFlowerGraph(3,2,4000,a)), 8, 5)
-
-
---(fuzzyGraph, concreteGraph) = setUpGraphs((a -> makeFlowerGraph(3,2,10,a)));
---performanceData := simulateRun(concreteGraph, fuzzyGraph, 1);	
+numThreads := 8;
+numTrials := 5;
+rootCount := 5000;
+petalCount := 6;
+edgeCount := 3;
+time runComparison((a -> makeFlowerGraph(petalCount,edgeCount,rootCount,a)), numThreads, numTrials, UseRandomStrategy => true)
+time runComparison((a -> makeFlowerGraph(petalCount,edgeCount,rootCount,a)), numThreads, numTrials, UseRandomStrategy => false)
