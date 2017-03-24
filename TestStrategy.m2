@@ -1,5 +1,5 @@
 load("HomotopyGraphTypes.m2");
-load("ourStrategy.m2");
+load("OurStrategy.m2");
 
 --------------------------------------------------------------------------------
 ----Given a completed (correspondences all filled in) graph, a fuzzy grph with--
