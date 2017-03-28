@@ -1,4 +1,4 @@
-load("ourStrategy.m2")
+load("OurStrategy.m2")
 
 pathFinishedRandom = method()
 pathFinishedRandom (PathTracker, ZZ) := (tracker, newSolutionIndex) -> (
